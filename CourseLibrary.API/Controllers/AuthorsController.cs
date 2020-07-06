@@ -1,13 +1,10 @@
-﻿using AutoMapper;
-using CourseLibrary.API.Helpers;
+﻿using System;
+using System.Collections.Generic;
+using AutoMapper;
 using CourseLibrary.API.Models;
 using CourseLibrary.API.ResourceParameters;
 using CourseLibrary.API.Services;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace CourseLibrary.API.Controllers
 {

@@ -1,4 +1,6 @@
-﻿using AutoMapper;
+﻿using System;
+using System.Collections.Generic;
+using AutoMapper;
 using CourseLibrary.API.Models;
 using CourseLibrary.API.Services;
 using Microsoft.AspNetCore.JsonPatch;
@@ -7,10 +9,6 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace CourseLibrary.API.Controllers
 {
