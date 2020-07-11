@@ -5,16 +5,23 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CourseLibrary.API.Helpers;
+using CourseLibrary.API.Models;
 
 namespace CourseLibrary.API.Services
 {
     public class CourseLibraryRepository : ICourseLibraryRepository, IDisposable
     {
         private readonly CourseLibraryContext _context;
+        private readonly IPropertyMappingService _propertyMappingService;
 
-        public CourseLibraryRepository(CourseLibraryContext context )
+        public CourseLibraryRepository(
+            CourseLibraryContext context,
+            IPropertyMappingService propertyMappingService
+            )
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _propertyMappingService = propertyMappingService ?? 
+                                      throw new ArgumentNullException(nameof(propertyMappingService));
         }
 
         public void AddCourse(Guid authorId, Course course)
@@ -30,14 +37,14 @@ namespace CourseLibrary.API.Services
             }
             // always set the AuthorId to the passed-in authorId
             course.AuthorId = authorId;
-            _context.Courses.Add(course); 
-        }         
+            _context.Courses.Add(course);
+        }
 
         public void DeleteCourse(Course course)
         {
             _context.Courses.Remove(course);
         }
-  
+
         public Course GetCourse(Guid authorId, Guid courseId)
         {
             if (authorId == Guid.Empty)
@@ -108,7 +115,7 @@ namespace CourseLibrary.API.Services
 
             _context.Authors.Remove(author);
         }
-        
+
         public Author GetAuthor(Guid authorId)
         {
             if (authorId == Guid.Empty)
@@ -148,10 +155,21 @@ namespace CourseLibrary.API.Services
                     || a.LastName.Contains(searchQuery));
             }
 
-            return PagedList<Author>.Create(collection, 
-                authorsResourceParameters.PageNumber, 
-                authorsResourceParameters.PageSize);
+            if (!string.IsNullOrWhiteSpace(authorsResourceParameters.OrderBy))
+            {
+              
+                // get property mapping dictionary
+                var authorPropertyMappingDictionary = 
+                    _propertyMappingService.GetPropertyMapping<AuthorDto, Author>();
                 
+                collection = collection.ApplySort(authorsResourceParameters.OrderBy, 
+                    authorPropertyMappingDictionary);
+            }
+
+            return PagedList<Author>.Create(collection,
+                authorsResourceParameters.PageNumber,
+                authorsResourceParameters.PageSize);
+
         }
 
         public IEnumerable<Author> GetAuthors(IEnumerable<Guid> authorIds)
@@ -187,7 +205,7 @@ namespace CourseLibrary.API.Services
         {
             if (disposing)
             {
-               // dispose resources when needed
+                // dispose resources when needed
             }
         }
     }
