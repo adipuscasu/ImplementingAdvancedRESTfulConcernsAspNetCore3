@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using AutoMapper;
+using CourseLibrary.API.Entities;
 using CourseLibrary.API.Helpers;
 using CourseLibrary.API.Models;
 using CourseLibrary.API.ResourceParameters;
@@ -14,15 +15,19 @@ namespace CourseLibrary.API.Controllers
     public class AuthorsController : ControllerBase
     {
         private readonly ICourseLibraryRepository _courseLibraryRepository;
+        private readonly IPropertyMappingService _propertyMappingService;
         private readonly IMapper _mapper;
 
         public AuthorsController(ICourseLibraryRepository courseLibraryRepository,
+            IPropertyMappingService propertyMappingService,
             IMapper mapper)
         {
             _courseLibraryRepository = courseLibraryRepository ??
                 throw new ArgumentNullException(nameof(courseLibraryRepository));
+            _propertyMappingService = propertyMappingService ??
+                throw new ArgumentNullException(nameof(propertyMappingService));
             _mapper = mapper ??
-                throw new ArgumentNullException(nameof(mapper));
+                      throw new ArgumentNullException(nameof(mapper));
         }
 
         [HttpGet(Name = "GetAuthors")]
@@ -30,6 +35,10 @@ namespace CourseLibrary.API.Controllers
         public ActionResult<IEnumerable<AuthorDto>> GetAuthors(
             [FromQuery] AuthorsResourceParameters authorsResourceParameters)
         {
+            if (!_propertyMappingService.ValidMappingExistsFor<AuthorDto, Author>(authorsResourceParameters.OrderBy))
+            {
+                return BadRequest();
+            }
             var authorsFromRepo = _courseLibraryRepository.GetAuthors(authorsResourceParameters);
             var previousPageLink = authorsFromRepo.HasPrevious
                 ? CreateAuthorsResourceUri(authorsResourceParameters, ResourceUriType.PreviousPage)
