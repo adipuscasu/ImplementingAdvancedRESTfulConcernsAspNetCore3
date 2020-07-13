@@ -32,7 +32,7 @@ namespace CourseLibrary.API.Controllers
 
         [HttpGet(Name = "GetAuthors")]
         [HttpHead]
-        public ActionResult<IEnumerable<AuthorDto>> GetAuthors(
+        public IActionResult GetAuthors(
             [FromQuery] AuthorsResourceParameters authorsResourceParameters)
         {
             if (!_propertyMappingService.ValidMappingExistsFor<AuthorDto, Author>(authorsResourceParameters.OrderBy))
@@ -59,7 +59,8 @@ namespace CourseLibrary.API.Controllers
 
             Response.Headers.Add("X-Pagination",
                 JsonSerializer.Serialize(paginationMetadata));
-            return Ok(_mapper.Map<IEnumerable<AuthorDto>>(authorsFromRepo));
+            return Ok(_mapper.Map<IEnumerable<AuthorDto>>(authorsFromRepo)
+                .ShapeData(authorsResourceParameters.Fields));
         }
 
         [HttpGet("{authorId}", Name = "GetAuthor")]
@@ -125,7 +126,8 @@ namespace CourseLibrary.API.Controllers
                             pageNumber = authorsResourceParameters.PageNumber - 1,
                             pageSize = authorsResourceParameters.PageSize,
                             mainCategory = authorsResourceParameters.MainCategory,
-                            searchCategory = authorsResourceParameters.SearchQuery
+                            searchCategory = authorsResourceParameters.SearchQuery,
+                            fields = authorsResourceParameters.Fields
                         });
                 case ResourceUriType.NextPage:
                     return Url.Link("GetAuthors",
@@ -135,7 +137,9 @@ namespace CourseLibrary.API.Controllers
                             pageNumber = authorsResourceParameters.PageNumber + 1,
                             pageSize = authorsResourceParameters.PageSize,
                             mainCategory = authorsResourceParameters.MainCategory,
-                            searchCategory = authorsResourceParameters.SearchQuery
+                            searchCategory = authorsResourceParameters.SearchQuery,
+                            fields = authorsResourceParameters.Fields
+
                         });
                 default:
                     return Url.Link("GetAuthors",
@@ -145,7 +149,9 @@ namespace CourseLibrary.API.Controllers
                             pageNumber = authorsResourceParameters.PageNumber,
                             pageSize = authorsResourceParameters.PageSize,
                             mainCategory = authorsResourceParameters.MainCategory,
-                            searchCategory = authorsResourceParameters.SearchQuery
+                            searchCategory = authorsResourceParameters.SearchQuery,
+                            fields = authorsResourceParameters.Fields
+
                         });
             }
         }
