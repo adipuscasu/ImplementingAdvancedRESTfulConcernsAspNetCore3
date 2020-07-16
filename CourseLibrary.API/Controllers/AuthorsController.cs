@@ -16,16 +16,20 @@ namespace CourseLibrary.API.Controllers
     {
         private readonly ICourseLibraryRepository _courseLibraryRepository;
         private readonly IPropertyMappingService _propertyMappingService;
+        private readonly IPropertyCheckerService _propertyCheckerService;
         private readonly IMapper _mapper;
 
         public AuthorsController(ICourseLibraryRepository courseLibraryRepository,
             IPropertyMappingService propertyMappingService,
+            IPropertyCheckerService propertyCheckerService,
             IMapper mapper)
         {
             _courseLibraryRepository = courseLibraryRepository ??
                 throw new ArgumentNullException(nameof(courseLibraryRepository));
             _propertyMappingService = propertyMappingService ??
                 throw new ArgumentNullException(nameof(propertyMappingService));
+            _propertyCheckerService = propertyCheckerService ?? 
+                throw new ArgumentNullException(nameof(propertyCheckerService));
             _mapper = mapper ??
                       throw new ArgumentNullException(nameof(mapper));
         }
@@ -36,6 +40,11 @@ namespace CourseLibrary.API.Controllers
             [FromQuery] AuthorsResourceParameters authorsResourceParameters)
         {
             if (!_propertyMappingService.ValidMappingExistsFor<AuthorDto, Author>(authorsResourceParameters.OrderBy))
+            {
+                return BadRequest();
+            }
+
+            if (!_propertyCheckerService.TypeHasProperties<AuthorDto>(authorsResourceParameters.Fields))
             {
                 return BadRequest();
             }
@@ -64,8 +73,12 @@ namespace CourseLibrary.API.Controllers
         }
 
         [HttpGet("{authorId}", Name = "GetAuthor")]
-        public IActionResult GetAuthor(Guid authorId)
+        public IActionResult GetAuthor(Guid authorId, string fields)
         {
+            if (!_propertyCheckerService.TypeHasProperties<AuthorDto>(fields))
+            {
+                return BadRequest();
+            }
             var authorFromRepo = _courseLibraryRepository.GetAuthor(authorId);
 
             if (authorFromRepo == null)
@@ -73,7 +86,8 @@ namespace CourseLibrary.API.Controllers
                 return NotFound();
             }
 
-            return Ok(_mapper.Map<AuthorDto>(authorFromRepo));
+
+            return Ok(_mapper.Map<AuthorDto>(authorFromRepo).ShapeData(fields));
         }
 
         [HttpPost]
