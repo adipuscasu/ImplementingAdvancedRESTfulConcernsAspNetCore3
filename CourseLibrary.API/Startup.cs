@@ -12,6 +12,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json.Serialization;
 using System;
+using System.Linq;
+using Microsoft.AspNetCore.Mvc.Formatters;
 
 namespace CourseLibrary.API
 {
@@ -82,6 +84,12 @@ namespace CourseLibrary.API
                 };
             });
 
+            services.Configure<MvcOptions>(config =>
+            {
+                var newtonsoftJsonOutputFormatter = config.OutputFormatters
+                    .OfType<NewtonsoftJsonOutputFormatter>().FirstOrDefault();
+                newtonsoftJsonOutputFormatter?.SupportedMediaTypes.Add("application/vnd.marvin.hateoas+json");
+            });
             // register PropertyMappingService
             services.AddTransient<IPropertyMappingService, PropertyMappingService>();
             // register PropertyCheckerService
