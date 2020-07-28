@@ -59,7 +59,7 @@ namespace CourseLibrary.API.Controllers
                 pageSize = authorsFromRepo.PageSize,
                 currentPage = authorsFromRepo.CurrentPage,
                 totalPages = authorsFromRepo.TotalPages
-                
+
             };
 
             Response.Headers.Add("X-Pagination",
@@ -87,6 +87,13 @@ namespace CourseLibrary.API.Controllers
             return Ok(linkedCollectionResource);
         }
 
+
+        [Produces("application/json",
+            "application/vnd.marvin.hateoas+json",
+            "application/vnd.marvin.author.full+json",
+            "application/vnd.marvin.author.full.hateoas+json",
+            "application/vnd.marvin.author.friendly+json",
+            "application/vnd.marvin.author.friendly.hateoas+json")]
         [HttpGet("{authorId}", Name = "GetAuthor")]
         public IActionResult GetAuthor(Guid authorId, string fields,
             [FromHeader(Name = "Accept")] string mediaType)
@@ -106,22 +113,45 @@ namespace CourseLibrary.API.Controllers
             {
                 return NotFound();
             }
-            if (parsedMediaType.MediaType == "application/vnd.marvin.hateoas.json")
+
+            var includeLinks = parsedMediaType.SubTypeWithoutSuffix
+                .EndsWith("hateoas", StringComparison.InvariantCultureIgnoreCase);
+
+            IEnumerable<LinkDto> links = new List<LinkDto>();
+
+            if (includeLinks)
             {
-
-                var links = CreateLinksForAuthor(authorId, fields);
-
-                var linkedResourceToReturn =
-                    _mapper.Map<AuthorDto>(authorFromRepo).ShapeData(fields)
-                        as IDictionary<string, object>;
-                linkedResourceToReturn.Add("links", links);
-
-                return Ok(linkedResourceToReturn); 
+                links = CreateLinksForAuthor(authorId, fields);
             }
-            else
+
+            var primaryMediaType = includeLinks
+                ? parsedMediaType.SubTypeWithoutSuffix
+                    .Substring(0, parsedMediaType.SubTypeWithoutSuffix.Length - 8)
+                : parsedMediaType.SubTypeWithoutSuffix;
+
+            // full author
+            if (primaryMediaType == "vnd.marvin.author.full")
             {
-                return Ok(_mapper.Map<AuthorDto>(authorFromRepo).ShapeData(fields));
+                var fullResourceToReturn = _mapper.Map<AuthorFullDto>(authorFromRepo)
+                    .ShapeData(fields) as IDictionary<string, object>;
+                if (includeLinks)
+                {
+                    fullResourceToReturn.Add("links", links);
+                }
+
+                return Ok(fullResourceToReturn);
             }
+
+            // friendly author
+            var friendlyResourceToReturn = _mapper.Map<AuthorDto>(authorFromRepo)
+                .ShapeData(fields) as IDictionary<string, object>;
+
+            if (includeLinks)
+            {
+                friendlyResourceToReturn.Add("links", links);
+            }
+
+            return Ok(friendlyResourceToReturn);
         }
 
         [HttpPost(Name = "CreateAuthor")]
@@ -250,32 +280,32 @@ namespace CourseLibrary.API.Controllers
 
         private IEnumerable<LinkDto> CreateLinksForAuthors(
             AuthorsResourceParameters authorsResourceParameters,
-            bool hasNext, 
+            bool hasNext,
             bool hasPrevious)
         {
             var links = new List<LinkDto>();
 
-        // self
-        links.Add(
-                new LinkDto(CreateAuthorsResourceUri(
-                        authorsResourceParameters, ResourceUriType.Current),
-                    "self", "GET"));
-        if (hasNext)
-        {
+            // self
             links.Add(
-                new LinkDto(CreateAuthorsResourceUri(
-                    authorsResourceParameters, ResourceUriType.NextPage),
-                    "nextPage", "GET"));
-        }
+                    new LinkDto(CreateAuthorsResourceUri(
+                            authorsResourceParameters, ResourceUriType.Current),
+                        "self", "GET"));
+            if (hasNext)
+            {
+                links.Add(
+                    new LinkDto(CreateAuthorsResourceUri(
+                        authorsResourceParameters, ResourceUriType.NextPage),
+                        "nextPage", "GET"));
+            }
 
-        if (hasPrevious)
-        {
-            links.Add((
-                new LinkDto(CreateAuthorsResourceUri(
-                    authorsResourceParameters, ResourceUriType.PreviousPage),
-                    "previousPage", "GET")));
-        }
+            if (hasPrevious)
+            {
+                links.Add((
+                    new LinkDto(CreateAuthorsResourceUri(
+                        authorsResourceParameters, ResourceUriType.PreviousPage),
+                        "previousPage", "GET")));
+            }
             return links;
         }
-}
+    }
 }
